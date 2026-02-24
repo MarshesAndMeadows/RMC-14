@@ -12,6 +12,7 @@ using Content.Shared._RMC14.Xenonids.Projectile.Spit.Ball;
 using Content.Shared._RMC14.Xenonids.Projectile.Spit.Charge;
 using Content.Shared._RMC14.Xenonids.Projectile.Spit.Scattered;
 using Content.Shared._RMC14.Xenonids.Projectile.Spit.Shield;
+using Content.Shared._RMC14.Xenonids.Projectile.Spit.Shotgun;
 using Content.Shared._RMC14.Xenonids.Projectile.Spit.Slowing;
 using Content.Shared._RMC14.Xenonids.Projectile.Spit.Stacks;
 using Content.Shared._RMC14.Xenonids.Projectile.Spit.Standard;
@@ -208,6 +209,42 @@ public sealed class XenoSpitSystem : EntitySystem
             target: args.Entity
         );
     }
+    //Trapper additions - Shotgun, Insight onhit.
+    private void OnXenoShotgunSpitAction(Entity<XenoShotgunSpitComponent> xeno, ref XenoShotgunSpitActionEvent args)
+    {
+        if (args.Handled)
+            return;
+
+        if (!_rmcActions.TryUseAction(args))
+            return;
+
+        args.Handled = _xenoProjectile.TryShoot(
+            xeno,
+            args.Target,
+            xeno.Comp.PlasmaCost,
+            xeno.Comp.ProjectileId,
+            xeno.Comp.Sound,
+            xeno.Comp.MaxProjectiles,
+            xeno.Comp.MaxDeviation,
+            xeno.Comp.Speed,
+            target: args.Entity
+        );
+    }
+
+    private void OnInsightOnHit(Entity<Xenonids.Insight.XenoInsightComponent> ent, ref ProjectileHitEvent args)
+    {
+        if (!_projectileQuery.TryComp(ent, out var projectile) ||
+            projectile.Shooter is not { Valid: true } shooter)
+        {
+            return;
+        }
+
+        if (!_xeno.CanAbilityAttackTarget(shooter, args.Target))
+            return;
+
+        //apply insight onhit gains here
+    }
+
 
     private void OnXenoChargeSpitAction(Entity<XenoChargeSpitComponent> xeno, ref XenoChargeSpitActionEvent args)
     {

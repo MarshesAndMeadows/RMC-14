@@ -1511,3 +1511,68 @@
     deselectOnMiss: false
   - type: WorldTargetAction
     event: !type:XenoDestroyActionEvent
+
+# Trapper Actions
+- type: entity
+  parent: XenoActionBase
+  id: ActionXenoAcidMine
+  name: Acid Mine (40)
+  description: Cause an acid explosion at the targeted location.
+  components:
+  - type: Action
+    itemIconStyle: NoItem
+    icon:
+      sprite: #TODO
+      state: #TODO
+    useDelay: 1
+  - type: TargetAction
+    range: 7 #Placeholder, dont know actual CM13 range
+    event: !type:XenoAcidMineActionEvent
+  - type: ActionBlockIfResting
+  - type: XenoActionPlasma
+    cost: 40
+
+- type: entity
+  id: ActionXenoAcidShotgun
+  parent: ActionXenoBase
+  name: Acid Shotgun (40)
+  description: Launches multiple acid projectiles that deal increased damage to restrained targets.
+  components:
+  - type: Action
+    itemIconStyle: NoItem
+    icon:
+      sprite: _RMC14/Actions/xeno_actions.rsi
+      state: acid_shotgun
+    useDelay: 7
+  - type: TargetAction
+    range: 15
+    checkCanAccess: false
+  - type: EntityTargetAction
+  - type: WorldTargetAction
+    event: !type:XenoShotgunActionEvent
+  - type: ActionBlockIfResting
+  - type: XenoActionPlasma
+    cost: 40
+
+- type: entity
+  id: ActionXenoDeployTraps
+  parent: ActionXenoBase
+  name: Deploy Traps (60)
+  description: Deploys a line of temporary snaring traps.
+  components:
+  - type: Action
+    itemIconStyle: NoItem
+    icon:
+      sprite: #TODO sprites for trapper
+      state: #TODO
+    useDelay: 60
+  - type: TargetAction
+    range: 7
+    deselectOnMiss: false
+  - type: WorldTargetAction
+    event: !type:XenoDeployTrapsActionEvent
+  - type: XenoActionPlasma
+    cost: 60
+
+
+
