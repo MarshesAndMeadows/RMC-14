@@ -1,8 +1,11 @@
-﻿using System.Numerics;
+﻿using System.Linq;
+using System.Numerics;
+using Content.Shared._RMC14.Entrenching;
 using Content.Shared._RMC14.Line;
 using Content.Shared._RMC14.Map;
 using Content.Shared._RMC14.Xenonids.Construction.FloorResin;
 using Content.Shared._RMC14.Xenonids.Construction.Tunnel;
+using Content.Shared._RMC14.Xenonids.DeployTraps;
 using Content.Shared._RMC14.Xenonids.Hive;
 using Content.Shared._RMC14.Xenonids.Insight;
 using Content.Shared._RMC14.Xenonids.Plasma;
@@ -10,23 +13,28 @@ using Content.Shared._RMC14.Xenonids.ResinSurge;
 using Content.Shared.Actions;
 using Content.Shared.Coordinates;
 using Content.Shared.Coordinates.Helpers;
+using Content.Shared.Damage;
 using Content.Shared.DoAfter;
+using Content.Shared.Effects;
 using Content.Shared.Examine;
+using Content.Shared.FixedPoint;
+using Content.Shared.Interaction;
 using Content.Shared.Maps;
+using Content.Shared.Mobs.Components;
 using Content.Shared.MouseRotator;
 using Content.Shared.Popups;
 using Robust.Shared.Map;
 using Robust.Shared.Map.Components;
 using Robust.Shared.Network;
+using Robust.Shared.Physics.Systems;
+using Robust.Shared.Player;
 using YamlDotNet.Core;
 
 namespace Content.Shared._RMC14.Xenonids.AcidMine;
+
 public sealed class XenoAcidMineSystem : EntitySystem
 {
-    [Dependency] private readonly EntityManager _entityManager = default!;
     [Dependency] private readonly IMapManager _map = default!;
-    [Dependency] private readonly INetManager _net = default!;
-    [Dependency] private readonly SharedXenoHiveSystem _hive = default!;
     [Dependency] private readonly SharedActionsSystem _actions = default!;
     [Dependency] private readonly SharedPopupSystem _popup = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
@@ -34,27 +42,20 @@ public sealed class XenoAcidMineSystem : EntitySystem
     [Dependency] private readonly XenoPlasmaSystem _xenoPlasma = default!;
     [Dependency] private readonly ExamineSystemShared _examine = default!;
     [Dependency] private readonly SharedDoAfterSystem _doAfter = default!;
-    [Dependency] private readonly RMCMapSystem _rmcMap = default!;
     [Dependency] private readonly TurfSystem _turf = default!;
-    [Dependency] private readonly LineSystem _line = default!;
-    [Dependency] private readonly XenoInsightSystem _insight = default!;
+    [Dependency] private readonly XenoSystem _xeno = default!;
+    [Dependency] private readonly EntityLookupSystem _lookup = default!;
+    [Dependency] private readonly DamageableSystem _damage = default!;
+    [Dependency] private readonly SharedColorFlashEffectSystem _colorFlash = default!;
+    [Dependency] private readonly SharedInteractionSystem _interaction = default!;
+
+    private readonly HashSet<Entity<MobStateComponent>> _hit = new();
+
 
     public override void Initialize()
     {
         SubscribeLocalEvent<XenoAcidMineComponent, XenoAcidMineActionEvent>(OnXenoAcidMineAction);
-        SubscribeLocalEvent<XenoAcidMineComponent, XenoAcidMineDoAfter>(OnDeployTrapsDoAfter);
-    }
-
-    private void AcidMine(Entity<XenoAcidMineComponent> xeno, EntityCoordinates target, bool empowered)
-    {
-        if (!target.IsValid(EntityManager))
-            return;
-
-        if (_net.IsServer)
-        {
-            //explosion behavior here
-
-        }
+        SubscribeLocalEvent<XenoAcidMineComponent, XenoAcidMineDoAfter>(OnAcidMineDoAfter);
     }
 
     private void ReduceAcidMineCooldown(Entity<XenoAcidMineComponent> xeno, double? cooldownMult = null)
@@ -87,8 +88,6 @@ public sealed class XenoAcidMineSystem : EntitySystem
         if (args.Handled)
             return;
 
-        var insight = _insight.GetInsight(xeno.Owner);
-
         // Check if target on grid
         if (_transform.GetGrid(args.Target) is not { } gridId ||
             !TryComp(gridId, out MapGridComponent? grid))
@@ -105,33 +104,29 @@ public sealed class XenoAcidMineSystem : EntitySystem
         var target = args.Target.SnapToGrid(EntityManager, _map);
 
         // Check if user has enough plasma
-        if (xeno.Comp.DeployTrapsDoAfter != null ||
+        if (xeno.Comp.AcidMineDoAfter != null ||
             !_xenoPlasma.TryRemovePlasmaPopup((xeno.Owner, null), args.PlasmaCost))
             return;
 
-        // Check if user is empowered by Insight
-        if (insight == 10)
-            xeno.Comp.Empowered = true;
-
-        // Deploy Traps
         var ev = new XenoAcidMineDoAfter(GetNetCoordinates(target));
         var doAfter = new DoAfterArgs(EntityManager, xeno, xeno.Comp.AcidMineDoAfterPeriod, ev, xeno)
             { BreakOnMove = true, DuplicateCondition = DuplicateConditions.SameEvent };
         if (_doAfter.TryStartDoAfter(doAfter, out var id))
             xeno.Comp.AcidMineDoAfter = id;
         else
-            ReduceDeployTrapsCooldown(xeno);
+            ReduceAcidMineCooldown(xeno);
 
         args.Handled = false;
     }
 
-    private void OnDeployTrapsDoAfter(Entity<XenoAcidMineComponent> xeno, ref XenoAcidMineDoAfter args)
+    private void OnAcidMineDoAfter(Entity<XenoAcidMineComponent> xeno, ref XenoAcidMineDoAfter args)
     {
         xeno.Comp.AcidMineDoAfter = null;
         if (args.Cancelled)
             return;
 
         var coords = GetCoordinates(args.Coordinates);
+
         if (_transform.GetGrid(coords) is not { } gridId ||
             !TryComp(gridId, out MapGridComponent? grid))
             return;
@@ -140,21 +135,56 @@ public sealed class XenoAcidMineSystem : EntitySystem
         var popupOthers = Loc.GetString("rmc-xeno-deploy-traps-others", ("xeno", xeno));
         _popup.PopupPredicted(popupSelf, popupOthers, xeno, xeno);
 
-        if (_net.IsServer)
+        var explodingTiles = _sharedMap.GetTilesIntersecting(
+            gridId,
+            grid,
+            Box2.CenteredAround(coords.Position,
+                new(xeno.Comp.AcidMineRadius * 2,
+                    xeno.Comp.AcidMineRadius * 2)));
+
+        //total list of struck entities
+        HashSet<EntityUid> hitEntities = new();
+
+        //collect all hit entities
+        foreach (var tile in explodingTiles)
         {
+            hitEntities.UnionWith(_lookup.GetEntitiesInTile(tile));
+        }
 
+        var damageToMobs = new DamageSpecifier(xeno.Comp.DamageToMobs);
+        var damageToCades = new DamageSpecifier(xeno.Comp.DamageToStructures);
 
+        //sort out only valid targets
+        foreach (var target in hitEntities)
+        {
+            if (!_xeno.CanAbilityAttackTarget(xeno, target, true, true))
+                continue;
 
-            foreach (var turf in explodingTiles)
+            //apply damage
+            if (TryComp(target, out BarricadeComponent? barricade))
             {
-                //gotta make them entitycoords.
-                var turfCoords = _transform.ToCoordinates(turf.Coordinates);
-                //finally do tile by tile anchor check and deploy the damn traps.
-                if (!_rmcMap.HasAnchoredEntityEnumerator<DeployTrapsBlockerComponent>(turfCoords, out _))
-                    DeployTraps(xeno, turfCoords, xeno.Comp.Empowered);
+                var change = _damage.TryChangeDamage(target, damageToCades, origin: xeno, tool: xeno);
+            }
+            else
+            {
+                var change = _damage.TryChangeDamage(target, damageToMobs, origin: xeno, tool: xeno);
+                if (change?.GetTotal() > FixedPoint2.Zero)
+                {
+                    var filter = Filter.Pvs(target, entityManager: EntityManager).RemoveWhereAttachedEntity(o => o == xeno.Owner);
+                    _colorFlash.RaiseEffect(Color.Red, new List<EntityUid> { target }, filter);
+                }
             }
         }
 
-        SetDeployTrapsCooldown(xeno);
+        //do telegraph
+        foreach (var tile in explodingTiles)
+        {
+            if (!_interaction.InRangeUnobstructed(xeno.Owner, _turf.GetTileCenter(tile), xeno.Comp.Range + 0.5f))
+                continue;
+
+            SpawnAtPosition(xeno.Comp.TelegraphEffect, _turf.GetTileCenter(tile));
+        }
+
+        SetAcidMineCooldown(xeno);
     }
 }

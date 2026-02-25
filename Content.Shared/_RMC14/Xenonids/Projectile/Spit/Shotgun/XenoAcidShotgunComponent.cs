@@ -8,7 +8,7 @@ namespace Content.Shared._RMC14.Xenonids.Projectile.Spit.Shotgun;
 [RegisterComponent, NetworkedComponent, AutoGenerateComponentState]
 [Access(typeof(XenoSpitSystem))]
 
-public sealed partial class XenoShotgunSpitComponent : Component
+public sealed partial class XenoAcidShotgunComponent : Component
 {
     [DataField, AutoNetworkedField]
     public FixedPoint2 PlasmaCost = 40;
@@ -17,7 +17,7 @@ public sealed partial class XenoShotgunSpitComponent : Component
     public float Speed = 20;
 
     [DataField, AutoNetworkedField]
-    public EntProtoId ProjectileId = "XenoShotgunSpitProjectile";
+    public EntProtoId ProjectileId = "XenoAcidShotgunProjectile";
 
     [DataField, AutoNetworkedField]
     public SoundSpecifier Sound = new SoundCollectionSpecifier("XenoSpitAcid", AudioParams.Default.WithVolume(-10f));
@@ -26,5 +26,5 @@ public sealed partial class XenoShotgunSpitComponent : Component
     public int MaxProjectiles = 9;
 
     [DataField, AutoNetworkedField]
-    public Angle MaxDeviation = Angle.FromDegrees(90);
+    public Angle MaxDeviation = Angle.FromDegrees(60);
 }

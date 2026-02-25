@@ -8,6 +8,7 @@ using Content.Shared._RMC14.Shields;
 using Content.Shared._RMC14.Slow;
 using Content.Shared._RMC14.Synth;
 using Content.Shared._RMC14.Xenonids.Hive;
+using Content.Shared._RMC14.Xenonids.Insight;
 using Content.Shared._RMC14.Xenonids.Projectile.Spit.Ball;
 using Content.Shared._RMC14.Xenonids.Projectile.Spit.Charge;
 using Content.Shared._RMC14.Xenonids.Projectile.Spit.Scattered;
@@ -65,6 +66,7 @@ public sealed class XenoSpitSystem : EntitySystem
     [Dependency] private readonly RMCSlowSystem _slow = default!;
     [Dependency] private readonly SharedRMCActionsSystem _rmcActions = default!;
     [Dependency] private readonly XenoSystem _xeno = default!;
+    [Dependency] private readonly XenoInsightSystem _insight = default!;
 
     private static readonly ProtoId<ReagentPrototype> AcidRemovedBy = "Water";
 
@@ -79,6 +81,9 @@ public sealed class XenoSpitSystem : EntitySystem
         SubscribeLocalEvent<XenoSlowingSpitComponent, XenoSlowingSpitActionEvent>(OnXenoSlowingSpitAction);
         SubscribeLocalEvent<XenoScatteredSpitComponent, XenoScatteredSpitActionEvent>(OnXenoScatteredSpitAction);
         SubscribeLocalEvent<XenoChargeSpitComponent, XenoChargeSpitActionEvent>(OnXenoChargeSpitAction);
+
+        SubscribeLocalEvent<XenoAcidShotgunComponent, XenoAcidShotgunActionEvent>(OnXenoShotgunSpitAction);
+        SubscribeLocalEvent<XenoAcidShotgunComponent, ProjectileHitEvent>(GainInsightOnHit, after: [typeof(CMClusterGrenadeSystem)]);
 
         SubscribeLocalEvent<XenoActiveChargingSpitComponent, ComponentStartup>(OnActiveChargingSpitAdded);
         SubscribeLocalEvent<XenoActiveChargingSpitComponent, ComponentRemove>(OnActiveChargingSpitRemove);
@@ -209,8 +214,9 @@ public sealed class XenoSpitSystem : EntitySystem
             target: args.Entity
         );
     }
+
     //Trapper additions - Shotgun, Insight onhit.
-    private void OnXenoShotgunSpitAction(Entity<XenoShotgunSpitComponent> xeno, ref XenoShotgunSpitActionEvent args)
+    private void OnXenoShotgunSpitAction(Entity<XenoAcidShotgunComponent> xeno, ref XenoAcidShotgunActionEvent args)
     {
         if (args.Handled)
             return;
@@ -231,18 +237,22 @@ public sealed class XenoSpitSystem : EntitySystem
         );
     }
 
-    private void OnInsightOnHit(Entity<Xenonids.Insight.XenoInsightComponent> ent, ref ProjectileHitEvent args)
+    private void GainInsightOnHit(Entity<XenoAcidShotgunComponent> ent, ref ProjectileHitEvent args)
     {
         if (!_projectileQuery.TryComp(ent, out var projectile) ||
             projectile.Shooter is not { Valid: true } shooter)
-        {
             return;
-        }
 
         if (!_xeno.CanAbilityAttackTarget(shooter, args.Target))
             return;
 
-        //apply insight onhit gains here
+        if (HasComp<RMCRootedComponent>(args.Target))
+        {
+            args.Damage *= 1.75;
+            _insight.IncrementInsight(shooter, 10);
+        }
+        else
+            _insight.IncrementInsight(shooter, 1);
     }
 
 

@@ -168,69 +168,75 @@
     id: CMXenoBoiler
 
     #CMXenoBoiler
-  - type: entity
-    parent: CMXenoBoiler
+- type: entity
+  parent: CMXenoBoiler
+  id: RMCXenoBoiler
+  components:
+  - type: Xeno
+    actionIds:
+    - ActionXenoRest
+    - ActionXenoRegurgitate
+    - ActionXenoWatch
+    - ActionXenoTailStabBoiler
+    - ActionXenoAcidStrong
+    - ActionXenoBombard
+    - ActionXenoToggleGasType
+    - ActionXenoSprayAcidBoiler
+    - ActionXenoZoom
+    - ActionXenoAcidShroud
+    - ActionXenoDevolve
+  - type: XenoDeathcloud
+  - type: NeurotoxinInjector
+  - type: XenoEvolution
+    strains:
+      - RMCXenoBoilerTrapper
+  - type: RMCActionOrder
     id: RMCXenoBoiler
-    components:
-    - type: Xeno
-      actionIds:
-      - ActionXenoRest
-      - ActionXenoRegurgitate
-      - ActionXenoWatch
-      - ActionXenoTailStabBoiler
-      - ActionXenoAcidStrong
-      - ActionXenoBombard
-      - ActionXenoToggleGasType
-      - ActionXenoSprayAcidBoiler
-      - ActionXenoZoom
-      - ActionXenoAcidShroud
-      - ActionXenoDevolve
-    - type: XenoDeathcloud
-    - type: XenoNeurotoxinInjector
-    - type: XenoEvolution
-      strains:
-        - RMCXenoBoilerTrapper
-    - type: RMCActionOrder
-      id: RMCXenoBoiler
 
     # Trapper strain
-  - type: entity
-    parent: CMXenoBoiler
+- type: entity
+  parent: CMXenoBoiler
+  id: RMCXenoBoilerTrapper
+  suffix: Trapper
+  components:
+  - type: Sprite
+    sprite: _RMC14/Mobs/Xenonids/Boiler/boiler.rsi
+  - type: Xeno
+    actionIds:
+    - ActionXenoRest
+    - ActionXenoRegurgitate
+    - ActionXenoWatch
+    - ActionXenoTailStabBoiler
+    - ActionXenoAcidStrong
+    - ActionXenoAcidMine
+    - ActionXenoAcidShotgun
+    - ActionXenoDeployTraps
+    - ActionXenoZoom
+    - ActionXenoDevolve
+  - type: XenoStrain
+    name: rmc-xeno-trapper-name
+    description: rmc-xeno-trapper-description
+    popup: rmc-xeno-trapper-popup
+  - type: CMArmor
+    xenoArmor: 0
+    explosionArmor: 20
+  - type: MovementSpeedModifier
+    baseWalkSpeed: 1.75
+    baseSprintSpeed: 3.25
+  - type: XenoAcidMine
+    damageToMobs:
+      types:
+        Caustic: 45
+    damageToStructures:
+      types:
+        Caustic: 76
+    damageToStructuresEmpowered:
+      types:
+        Caustic: 114
+  - type: XenoAcidShotgun
+  - type: XenoDeployTraps
+  - type: XenoInsight
+  - type: RMCActionOrder
     id: RMCXenoBoilerTrapper
-    suffix: Trapper
-    components:
-    - type: Sprite
-      sprite: _RMC14/Mobs/Xenonids/Boiler/boiler.rsi
-    - type: Xeno
-      actionIds:
-      - ActionXenoRest
-      - ActionXenoRegurgitate
-      - ActionXenoWatch
-      - ActionXenoTailStabBoiler
-      - ActionXenoAcidStrong
-      - ActionXenoAcidSprayBoiler
-      - ActionXenoAcidMine
-      - ActionXenoAcidShotgun
-      - ActionXenoDeployTraps
-      - ActionXenoZoom
-      - ActionXenoDevolve
-    - type: XenoStrain
-      name: rmc-xeno-trapper-name
-      description: rmc-xeno-trapper-description
-      popup: rmc-xeno-trapper-popup
-    - type: CMArmor
-      xenoArmor: 0
-      explosionArmor: 20
-    - type: MovementSpeedModifier
-      baseWalkSpeed: 1.75
-      baseSprintSpeed: 3.25
-
-    - type: XenoAcidMine
-    - type: XenoAcidShotgun
-    - type: XenoDeployTraps
-    - type: XenoTrapperInsight
-
-    - type: RMCActionOrder
-      id: RMCXenoBoilerTrapper
 
 

@@ -1514,7 +1514,7 @@
 
 # Trapper Actions
 - type: entity
-  parent: XenoActionBase
+  parent: ActionXenoBase
   id: ActionXenoAcidMine
   name: Acid Mine (40)
   description: Cause an acid explosion at the targeted location.
@@ -1522,11 +1522,11 @@
   - type: Action
     itemIconStyle: NoItem
     icon:
-      sprite: #TODO
-      state: #TODO
+      sprite: _RMC14/Actions/xeno_actions.rsi
+      state: acid_shotgun
     useDelay: 1
-  - type: TargetAction
-    range: 7 #Placeholder, dont know actual CM13 range
+  - type: WorldTargetAction
+    range: 7
     event: !type:XenoAcidMineActionEvent
   - type: ActionBlockIfResting
   - type: XenoActionPlasma
@@ -1547,9 +1547,8 @@
   - type: TargetAction
     range: 15
     checkCanAccess: false
-  - type: EntityTargetAction
   - type: WorldTargetAction
-    event: !type:XenoShotgunActionEvent
+    event: !type:XenoAcidShotgunActionEvent
   - type: ActionBlockIfResting
   - type: XenoActionPlasma
     cost: 40
@@ -1563,8 +1562,8 @@
   - type: Action
     itemIconStyle: NoItem
     icon:
-      sprite: #TODO sprites for trapper
-      state: #TODO
+      sprite: _RMC14/Actions/xeno_actions.rsi
+      state: acid_shotgun
     useDelay: 60
   - type: TargetAction
     range: 7

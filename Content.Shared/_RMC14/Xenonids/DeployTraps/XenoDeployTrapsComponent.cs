@@ -9,7 +9,7 @@ namespace Content.Shared._RMC14.Xenonids.DeployTraps;
 [Access(typeof(XenoDeployTrapsSystem))]
 public sealed partial class XenoDeployTrapsComponent : Component
 {
-    // Length of do-after for surging sticky resin
+    // Length of do-after
     [DataField, AutoNetworkedField]
     public TimeSpan DeployTrapsDoAfterPeriod = TimeSpan.FromSeconds(1);
 

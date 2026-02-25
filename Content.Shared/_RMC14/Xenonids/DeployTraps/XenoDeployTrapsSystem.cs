@@ -58,6 +58,10 @@ public sealed class XenoDeployTrapsSystem : EntitySystem
             {
                 var traps = SpawnAtPosition(xeno.Comp.DeployEmpoweredTrapsId, target);
                 _hive.SetSameHive(xeno.Owner, traps);
+
+                //consume empowered status after.
+                _insight.IncrementInsight(xeno.Owner, -10);
+                xeno.Comp.Empowered = false;
             }
             else
             {
@@ -97,8 +101,6 @@ public sealed class XenoDeployTrapsSystem : EntitySystem
         if (args.Handled)
             return;
 
-        var insight = _insight.GetInsight(xeno.Owner);
-
         // Check if target on grid
         if (_transform.GetGrid(args.Target) is not { } gridId ||
             !TryComp(gridId, out MapGridComponent? grid))
@@ -118,10 +120,6 @@ public sealed class XenoDeployTrapsSystem : EntitySystem
         if (xeno.Comp.DeployTrapsDoAfter != null ||
             !_xenoPlasma.TryRemovePlasmaPopup((xeno.Owner, null), args.PlasmaCost))
             return;
-
-        // Check if user is empowered by Insight
-        if (insight == 10)
-            xeno.Comp.Empowered = true;
 
         // Deploy Traps
         var ev = new XenoDeployTrapsDoAfter(GetNetCoordinates(target));

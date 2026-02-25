@@ -1,5 +1,6 @@
 ﻿using Content.Shared._RMC14.Slow;
 using Content.Shared._RMC14.Xenonids.Insight;
+using Content.Shared._RMC14.Xenonids.Projectile.Spit.Shotgun;
 using Content.Shared.Damage;
 using Content.Shared.Popups;
 using Content.Shared.Projectiles;
@@ -15,11 +16,11 @@ public sealed class XenoInsightSystem : EntitySystem
     [Dependency] private readonly DamageableSystem _damageable = default!;
     [Dependency] private readonly SharedPopupSystem _popup = default!;
 
+    private EntityQuery<ProjectileComponent> _projectileQuery = default!;
+
     public override void Initialize()
     {
         base.Initialize();
-
-        SubscribeLocalEvent<XenoInsightComponent, ProjectileHitEvent>(OnShotgunProjectileHit);
     }
 
     public int GetInsight(EntityUid uid)
@@ -40,9 +41,6 @@ public sealed class XenoInsightSystem : EntitySystem
         Dirty(xeno);
 
         if (xeno.Comp.Insight >= xeno.Comp.MaxInsight)
-            return;
-
-        if (xeno.Comp.Insight >= xeno.Comp.MaxInsight)
             InsightEmpower((xeno.Owner, xeno.Comp));
     }
 
@@ -53,30 +51,6 @@ public sealed class XenoInsightSystem : EntitySystem
 
         //empower popup TBD
         _popup.PopupClient(Loc.GetString("rmc-xeno-insight-empower"), xeno, xeno, PopupType.Medium);
-    }
-
-    private void OnShotgunProjectileHit(Entity<XenoInsightComponent> xeno, ref ProjectileHitEvent args)
-    {
-        var validTarget = false;
-
-        //Check if target is a valid one, so we cant stack Insight on non-targets.
-        if (_xeno.CanAbilityAttackTarget(xeno.Owner, args.Target))
-            validTarget = true;
-
-        //If we hit a target that is rooted, we need to do 75% more damage and always get max stacks of insight.
-        if (HasComp<RMCRootedComponent>(args.Target) && validTarget)
-        {
-            args.Damage *= 1.75;
-            xeno.Comp.Insight = Math.Max(xeno.Comp.Insight, xeno.Comp.MaxInsight);
-            InsightEmpower((xeno.Owner, xeno.Comp));
-        }
-        else if (validTarget)
-        {
-            //otherwise do normal damage and only increment by 1 per pellet.
-            IncrementInsight(xeno.Owner, 1);
-        }
-
-        Dirty(xeno);
     }
 }
 

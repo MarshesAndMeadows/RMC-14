@@ -1,6 +1,11 @@
-﻿namespace Content.Shared._RMC14.Xenonids.AcidMine;
+﻿using Content.Shared.Actions;
+using Content.Shared.Actions.Components;
+using Content.Shared.FixedPoint;
 
-public sealed class XenoAcidMineActionEvent
+namespace Content.Shared._RMC14.Xenonids.AcidMine;
+
+public sealed partial class XenoAcidMineActionEvent : WorldTargetActionEvent
 {
-    
+    [DataField]
+    public FixedPoint2 PlasmaCost = 40;
 }
