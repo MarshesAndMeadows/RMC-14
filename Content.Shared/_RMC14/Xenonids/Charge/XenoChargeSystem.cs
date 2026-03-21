@@ -7,6 +7,7 @@ using Content.Shared._RMC14.Pulling;
 using Content.Shared._RMC14.Slow;
 using Content.Shared._RMC14.Stun;
 using Content.Shared._RMC14.Xenonids.Animation;
+using Content.Shared._RMC14.Xenonids.Charge.CursorCharge;
 using Content.Shared._RMC14.Xenonids.Hive;
 using Content.Shared._RMC14.Xenonids.HiveLeader;
 using Content.Shared._RMC14.Xenonids.Plasma;
@@ -465,6 +466,27 @@ public sealed class XenoChargeSystem : EntitySystem
         if (_timing.ApplyingState)
             return;
 
+        // Cursor steering prototype - redirect to cursor system if component present
+        if (HasComp<XenoCursorSteeringComponent>(ent))
+        {
+            if (RemComp<ActiveXenoCursorSteeringComponent>(ent))
+            {
+                if (TryComp(ent, out XenoCursorSteeringComponent? steering))
+                {
+                    steering.Stage = 0;
+                    steering.DistanceTraveled = 0f;
+                    Dirty(ent, steering);
+                }
+                foreach (var action in _rmcActions.GetActionsWithEvent<XenoToggleChargingActionEvent>(ent))
+                    _actions.SetToggled((action, action), false);
+                return;
+            }
+
+            AddComp<ActiveXenoCursorSteeringComponent>(ent);
+            return;
+        }
+
+        // Original behavior preserved below
         if (RemComp<ActiveXenoToggleChargingComponent>(ent))
             return;
 
@@ -475,7 +497,6 @@ public sealed class XenoChargeSystem : EntitySystem
         var active = new ActiveXenoToggleChargingComponent();
         AddComp(ent, active, true);
 
-        // Moving diagonally
         if ((direction & (direction - 1)) != DirectionFlag.None)
             return;
 
